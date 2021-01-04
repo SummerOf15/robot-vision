@@ -5,7 +5,7 @@ from torchvision.models.resnet import resnet50
 import torch.nn.functional as F
 
 num_classes = 751  # change this depend on your dataset
-num_embedding=751
+num_embedding=1024
 
 class REID_NET(nn.Module):
     def __init__(self):
@@ -31,14 +31,12 @@ class REID_NET(nn.Module):
         x = self.resnet.avgpool(x)
         x = torch.flatten(x, 1)
 
-        predict_id= self.fc_metric(x) 
-        # predict_metric= self.fc_id(x) 
-        predict_metric=predict_id
-        
+        predict_id= self.fc_id(x) 
+        predict_metric= self.fc_metric(x)         
 
         predict = torch.cat([predict_id, predict_metric], dim=1)
 
-        return predict, predict_id, predict_metric
+        return predict,  predict_metric,predict_id,
 
 if __name__=="__main__":
     img=torch.randn((2,3,384, 128))
