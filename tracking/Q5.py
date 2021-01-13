@@ -4,15 +4,14 @@ from collections import defaultdict
 
 roi_defined = False
 
-def auto_canny(image, sigma=0.5):
-	# compute the median of the single channel pixel intensities
-	v = np.median(image)
-	# apply automatic Canny edge detection using the computed median
-	lower = int(max(0, (1.0 - sigma) * v))
-	upper = int(min(255, (1.0 + sigma) * v))
-	edged = cv2.Canny(image, lower, upper)
-	# return the edged image
-	return edged
+def auto_canny(image, sigma=0.8):
+    # compute the median of the single channel pixel intensities
+    v = np.median(image)
+    # apply automatic Canny edge detection using the computed median
+    lower = int((1.0 - sigma) * v)
+    upper = int(v)
+    edged = cv2.Canny(image, lower, upper)
+    return edged
 
 
 def define_ROI(event, x, y, flags, param):
