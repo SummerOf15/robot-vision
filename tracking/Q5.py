@@ -4,7 +4,7 @@ from collections import defaultdict
 
 roi_defined = False
 
-def auto_canny(image, sigma=0.33):
+def auto_canny(image, sigma=0.5):
 	# compute the median of the single channel pixel intensities
 	v = np.median(image)
 	# apply automatic Canny edge detection using the computed median
@@ -60,51 +60,31 @@ def create_r_table(roi):
     return r_table
 
 
-# def vote(r_table, image):
-#     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-#     # apply canny operator to extract edges
-#     edges = auto_canny(gray)
-#     orien = gradient_orien(edges)
-
-#     accumulator = np.zeros(gray.shape)
-#     # accumulate the votes
-#     for (i, j), value in np.ndenumerate(edges):
-#         if value:
-#             r_array=np.array(r_table[int(orien[i,j])])
-#             if r_array.shape[0]<1:
-#                 continue
-#             accum_i=r_array[:,0]+i
-#             accum_j=r_array[:,1]+j
-#             t=np.where((accum_i<accumulator.shape[0])&(accum_j < accumulator.shape[1])&(accum_i >= 0) & (accum_j >= 0))
-#             t=np.squeeze(t)
-#             accumulator[accum_i[t],accum_j[t]]+=1
-#             # for r in r_table[int(orien[i,j])]:
-#             #     accum_i, accum_j = i + r[0], j + r[1]
-#             #     if accum_i < accumulator.shape[0] and accum_j < accumulator.shape[1] and accum_i >= 0 and accum_j >= 0:
-#             #         accumulator[accum_i, accum_j] += 1
-
-#     return accumulator
-
 def vote(r_table, image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # apply canny operator to extract edges
     edges = auto_canny(gray)
+    cv2.imshow("edges",edges)
     orien = gradient_orien(edges)
 
     accumulator = np.zeros(gray.shape)
     # accumulate the votes
     for (i, j), value in np.ndenumerate(edges):
         if value:
-            for r in r_table[int(orien[i,j])]:
-                accum_i, accum_j = i + r[0], j + r[1]
-                if accum_i < accumulator.shape[0] and accum_j < accumulator.shape[1] and accum_i >= 0 and accum_j >= 0:
-                    accumulator[accum_i, accum_j] += 1
+            r_array=np.array(r_table[int(orien[i,j])])
+            if r_array.shape[0]<1:
+                continue
+            accum_i=r_array[:,0]+i
+            accum_j=r_array[:,1]+j
+            t=np.where((accum_i<accumulator.shape[0])&(accum_j < accumulator.shape[1])&(accum_i >= 0) & (accum_j >= 0))
+            t=np.squeeze(t)
+            accumulator[accum_i[t],accum_j[t]]+=1
 
     return accumulator
 
 
-# cap = cv2.VideoCapture('Test-Videos/Antoine_Mug.mp4')
-cap = cv2.VideoCapture('Test-Videos/VOT-Ball.mp4')
+cap = cv2.VideoCapture('Test-Videos/Antoine_Mug.mp4')
+# cap = cv2.VideoCapture('Test-Videos/VOT-Ball.mp4')
 # cap = cv2.VideoCapture('Test-Videos/VOT-Basket.mp4')
 # cap = cv2.VideoCapture('Test-Videos/VOT-Car.mp4')
 # cap = cv2.VideoCapture('Test-Videos/VOT-Sunshade.mp4')
@@ -147,15 +127,17 @@ while (1):
     ret, frame = cap.read()
     if ret == True:
         accumulator = vote(r_table, frame)
+        accumulator = accumulator/accumulator.max()
+        ret, track_window = cv2.meanShift(accumulator, track_window, term_crit)
         
-        # ret, track_window = cv2.meanShift(accumulator, track_window, term_crit)
-        ret, track_window = cv2.CamShift(accumulator, track_window, term_crit)
+        # adaptive tracking window 
+        # ret, track_window = cv2.CamShift(accumulator, track_window, term_crit)
 
         r,c,h,w = track_window
         frame_tracked = cv2.rectangle(frame, (r,c), (r+h,c+w), (255,0,0) ,2)
         
         cv2.imshow('Sequence', frame_tracked)
-        accumulator = accumulator/accumulator.max()
+        
         cv2.imshow('Meanshift', accumulator)
 
         # Save images
